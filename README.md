@@ -2,3 +2,5 @@
 
 This repository implements a one-step generative Flow Matching model that combines [Flowtok](https://arxiv.org/pdf/2503.10772) and [MeanFlow](https://arxiv.org/abs/2505.13447).
 
+![Samples](Samples.png)
+
