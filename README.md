@@ -20,5 +20,9 @@ This repository implements a one-step generative Flow Matching model that combin
 ![Samples](Samples.png)
 
 ## Pretrained Models:
+### Image to latent space:
+```
+vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-mse").eval()
+```
 
 
