@@ -2,9 +2,9 @@
 
 This repository implements a one-step generative Flow Matching model that combines [Flowtok](https://arxiv.org/pdf/2503.10772) and [MeanFlow](https://arxiv.org/abs/2505.13447).
 ## Framework
-    Text Prompts → Token Embeddings → Latent Variable \( Z_0 \)  
+Text Prompts → Token Embeddings → Latent Variable \( Z_0 \)  
                   ↓ **MeanFlow**  
-    Latent Variable \( Z_1 \) → VAE.decode(\( Z_1 \)) → Generated Images
+Latent Variable \( Z_1 \) → VAE.decode(\( Z_1 \)) → Generated Images
 ## Prompts:
     1) a yellow common dandelion in the middle of a yellow flower
     2) an orange dahlia in the garden
