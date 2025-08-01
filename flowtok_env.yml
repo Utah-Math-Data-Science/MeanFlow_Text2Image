@@ -1,0 +1,25 @@
+name: flowtok
+channels:
+  - pytorch
+  - nvidia
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.10
+  # GPU‑accelerated PyTorch with CUDA 12.1 (works on RTX 4090/3090)
+  - pytorch=2.3
+  - torchvision
+  - pytorch-cuda=12.1
+  - pip
+  - pip:
+      # Core libraries
+      - transformers==4.42.1
+      - datasets==2.19.0
+      - accelerate==0.29.3
+      - diffusers==0.29.2
+      - xformers==0.0.26.post1      # Flash‑attention & memory‑efficient ops
+      # Utilities
+      - safetensors
+      - pillow
+      - tqdm
+      - matplotlib
