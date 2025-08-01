@@ -13,12 +13,10 @@
 
 from __future__ import annotations
 import argparse
-import math
 import os
 from pathlib import Path
 from typing import Tuple
 import time
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -28,7 +26,6 @@ from torch.autograd.functional import jvp
 from torch.utils.data import DataLoader, DistributedSampler
 from torchvision import transforms
 from torchvision.utils import save_image
-
 from datasets import load_from_disk
 from diffusers.models import AutoencoderKL
 from transformers import (
@@ -412,7 +409,6 @@ def build_parser():
     p_train.add_argument("--ckpt_out", type=str, default="flowtok_mean_flow_")
     p_train.add_argument("--run_name", type=str, default="FlowTokLite")
     p_train.add_argument("--wandb", type=str, default="disabled")
-
     p_train.add_argument("--frozen_text_proj", action="store_true")
     p_train.add_argument("--noise_scale", type=float, default=0.1)
     p_train.add_argument("--model", type=str, default="mfunet")
