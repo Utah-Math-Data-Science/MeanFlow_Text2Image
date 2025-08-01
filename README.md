@@ -22,7 +22,14 @@ This repository implements a one-step generative Flow Matching model that combin
 ## Pretrained Models:
 ### Image to latent space:
 ```
+from diffusers.models import AutoencoderKL
 vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-mse").eval()
+```
+### Prompts to latent space:
+```
+from transformers import AutoTokenizer, AutoModel
+pre_tokenizer = AutoTokenizer.from_pretrained("intfloat/e5-base")
+pre_model = AutoModel.from_pretrained("intfloat/e5-base")
 ```
 
 
