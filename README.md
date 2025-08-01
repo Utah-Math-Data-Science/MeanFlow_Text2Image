@@ -9,7 +9,10 @@ Text Prompts → Token Embeddings → Latent Variable Z₀
                                  [ MeanFlow ]
                                        │
                                        ▼
-                         Latent Variable Z₁ → VAE.decode(Z₁) → Images
+                                 Latent Variable Z₁ → VAE.decode(Z₁)
+                                                           │
+                                                           ▼
+                                                        Images
 ```
 
 ## Prompts:
