@@ -147,11 +147,11 @@ def train(args):
     )
 
     scheduler = get_polynomial_decay_schedule_with_warmup(
-        optimizer=optim,
-        num_warmup_steps=len(loader) * args.epochs * 0.02,
-        num_training_steps=len(loader) * args.epochs,
-        lr_end=1e-8,
-        power=0.7,
+        optimizer = optim,
+        num_warmup_steps = len(loader) * args.epochs * 0.02,
+        num_training_steps = len(loader) * args.epochs,
+        lr_end = 1e-8,
+        power = 0.7,
     )
 
     # ---------------------------------------------------------------------
@@ -174,9 +174,14 @@ def train(args):
             entity="utah-math-data-science",
             project="Flow_Matching_Text2Image",
             mode=args.wandb,
-            name='Text2Image_MFlow_{}_{}_lr{}_frzn{}_teach{}_TSample{}_flowR{}_gamma{}_txtReg{}'.format(args.run_name, args.noise_scale, 
-                                                                                                         args.lr, args.frozen_text_proj, args.teacher, 
-                                                                                                         args.t_sample, args.flow_ratio, args.gamma, args.txt_reg),
+            name='Text2Image_MFlow_{}_TXTnoise{}_lr{}_frzn{}_TSample{}_flowR{}_gamma{}_txtReg{}'.format(args.run_name, 
+                                                                                                        args.noise_scale, 
+                                                                                                        args.lr, 
+                                                                                                        args.frozen_text_proj, 
+                                                                                                        args.t_sample, 
+                                                                                                        args.flow_ratio, 
+                                                                                                        args.gamma, 
+                                                                                                        args.txt_reg),
             config=vars(args),
             settings=wandb.Settings(_disable_stats=True),
             reinit=True,
@@ -201,9 +206,20 @@ def train(args):
             # ---------------------------------------------------------
             # Sample (t, r)
             # ---------------------------------------------------------
-            samples = torch.rand((imgs.size(0), 2), device=device)
-            t = torch.max(samples[:, 0], samples[:, 1])
-            r_ = torch.min(samples[:, 0], samples[:, 1])
+            if args.t_sample == 'log':
+                normal_samples = torch.randn((imgs.size(0), 2), device=device) * 1.0 - 0.4
+                samples = 1 / (1 + torch.exp(-normal_samples))  # sigmoid to map to (0,1)
+                # t is max
+                t = torch.max(samples[:, 0], samples[:, 1])  # ensure t >= r
+                # r is min
+                r_ = torch.min(samples[:, 0], samples[:, 1])  # ensure r <= t
+            elif args.t_sample == 'uniform_1':
+                samples = torch.rand((imgs.size(0), 2), device=device)
+                t = torch.max(samples[:, 0], samples[:, 1])  # ensure t >= r
+                r_ = torch.min(samples[:, 0], samples[:, 1])
+            else:
+                raise ValueError(f"Unknown t_sample method: {args.t_sample}")
+            
             select = torch.rand(imgs.size(0), device=device) < args.flow_ratio
             r_[select] = t[select]
 
@@ -243,10 +259,10 @@ def train(args):
                                                 loss_fn,
                                                 (img_tok, txt_tok, r_, t),
                                                 (
-                                                    torch.zeros_like(img_tok),
-                                                    eps,
-                                                    torch.zeros_like(r_),
-                                                    torch.zeros_like(t),
+                                                torch.zeros_like(img_tok),
+                                                eps,
+                                                torch.zeros_like(r_),
+                                                torch.zeros_like(t),
                                                 ),
                                                 )
             v_pred, dvdt = primal_pair
@@ -268,8 +284,6 @@ def train(args):
             scheduler.step()
             ema.update()
 
-
-            
             # record
             epoch_1loss += loss1.item()
             epoch_2loss += loss2.item()
@@ -406,7 +420,8 @@ def build_parser():
     p_train.add_argument("--flow_ratio", type=float, default=0.75)
     p_train.add_argument("--gamma", type=float, default=0.5)
     p_train.add_argument("--lr", type=float, default=1e-4)
-    p_train.add_argument("--sob_lambda", type=float, default=5e-3)
+    p_train.add_argument("--t_sample", type=str, default='uniform_1',)
+    p_train.add_argument("--sob_lambda", type=float, default=1e-2)
     p_train.add_argument("--txt_reg", type=float, default=1e-4)
     p_train.add_argument("--save_every", type=int, default=200)
 
