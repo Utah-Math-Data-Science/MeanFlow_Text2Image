@@ -16,18 +16,18 @@ Text Prompts → Token Embeddings → Latent Variable Z₀
 ```
 
 ## Prompts:
-    1) a yellow common dandelion in the middle of a yellow flower
-    2) an orange dahlia in the garden
-    3) a red bromelia in a plant
-    4) a pink cape flower in the garden
-    5) a close-up of a pink cyclamen
-    6) a red petunia in the garden
-    7) a purple pincushion flower in the grass
-    8) a gazania in a flower bed in the garden
-    9) a yellow sunflower in the middle of a field
-    10) two orange English marigolds in a black background
-    11) a small pink cyclamen in the middle of a flower
-    12) a morning glory in a fenced-in garden
+    1) a close up of a sword lily with orange flowers
+    2) a watercress in a flower pot
+    3) a yellow bougainvillea in the middle of the plant
+    4) a yellow columbine in the garden
+    5) a wallflower in the garden
+    6) a white silverbush in the middle of a flower
+    7) a blanket flower with a yellow and red flower
+    8) a small blue stemless gentian in the grass
+    9) a close up of a white petunia
+    10) a pink siam tulip with white flowers on a green background
+    11) a pink ruby-lipped cattleya with a white background
+    12) a close up of a red bee balm
     
 ## One-step Generated Samples:
 ![Samples](Samples.png)
