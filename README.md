@@ -1,7 +1,8 @@
 # Multimodal Meanflow: Text2Image
 
 This repository implements a one-step generative Flow Matching model that combines [Flowtok](https://arxiv.org/pdf/2503.10772) and [MeanFlow](https://arxiv.org/abs/2505.13447).
-
+## Framework
+    Texts -> Token Embedding -> Latent Variable Z_0 ------ Meanflow ------> Latent Variable Z_1 -> VAE.decode(Z_1) -> Image
 ## Prompts:
     1) a yellow common dandelion in the middle of a yellow flower
     2) an orange dahlia in the garden
