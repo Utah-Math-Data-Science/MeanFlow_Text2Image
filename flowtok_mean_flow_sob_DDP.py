@@ -62,7 +62,6 @@ def make_targets(
     txt_tokens: torch.Tensor,
     img_tokens: torch.Tensor,
     t: torch.Tensor,
-    eps: float = 1e-6,
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     z_t = (1 - t)[:, None, None, None] * img_tokens + t[:, None, None, None] * txt_tokens
     v = txt_tokens - img_tokens
@@ -148,7 +147,7 @@ def train(args):
         num_warmup_steps = len(loader) * args.epochs * 0.02,
         num_training_steps = len(loader) * args.epochs,
         lr_end = 1e-8,
-        power = 0.7,
+        power = 0.5,
     )
 
     # ---------------------------------------------------------------------
@@ -159,6 +158,24 @@ def train(args):
     pre_model = AutoModel.from_pretrained("intfloat/e5-base").to(device).eval()
 
     ema = EMA(model.module, decay=0.9995)  # Track original (unwrapped) model
+
+    if args.rcvr_epochs > 0:
+        # load the latest checkpoint if resuming training
+        ckpt_path = f"{args.ckpt_out}_epoch{args.rcvr_epochs}.pt"
+        if os.path.exists(ckpt_path):
+            print(f"✓ Loading checkpoint from {ckpt_path}")
+            ckpt = torch.load(ckpt_path, map_location=device)
+            model.module.load_state_dict(ckpt["model"])
+            optim.load_state_dict(ckpt["optimizer"])
+            scheduler.load_state_dict(ckpt["scheduler"])
+            ema.shadow = ckpt["ema"]
+            start_epoch = ckpt["epoch"]
+        else:
+            print(f"Checkpoint {ckpt_path} not found, starting from scratch.")
+            start_epoch = 0
+    else:
+        start_epoch = 0
+
     jvp_fn = partial(torch.autograd.functional.jvp, create_graph=True)
     scale_ = 0.18215
     noise_scale = args.noise_scale
@@ -171,14 +188,15 @@ def train(args):
             entity="utah-math-data-science",
             project="Flow_Matching_Text2Image",
             mode=args.wandb,
-            name='Text2Image_MFlow_{}_TXTnoise{}_lr{}_frzn{}_TSample{}_flowR{}_gamma{}_txtReg{}'.format(args.run_name, 
-                                                                                                        args.noise_scale, 
-                                                                                                        args.lr, 
-                                                                                                        args.frozen_text_proj, 
-                                                                                                        args.t_sample, 
-                                                                                                        args.flow_ratio, 
-                                                                                                        args.gamma, 
-                                                                                                        args.txt_reg),
+            name='Text2Image_MFlow_{}_TXTnoise{}_lr{}_frzn{}_TSample{}_flowR{}_gamma{}_txtReg{}_sob{}'.format(args.run_name,
+                                                                                                              args.noise_scale,
+                                                                                                              args.lr,
+                                                                                                              args.frozen_text_proj,
+                                                                                                              args.t_sample,
+                                                                                                              args.flow_ratio,
+                                                                                                              args.gamma,
+                                                                                                              args.txt_reg,
+                                                                                                              args.sob_lambda),
             config=vars(args),
             settings=wandb.Settings(_disable_stats=True),
             reinit=True,
@@ -188,7 +206,7 @@ def train(args):
     # ---------------------------------------------------------------------
     # Training epochs
     # ---------------------------------------------------------------------
-    for epoch in range(args.epochs):
+    for epoch in range(start_epoch, args.epochs):
         sampler.set_epoch(epoch)
         epoch_loss = 0.0
         epoch_1loss = 0.0
@@ -230,9 +248,13 @@ def train(args):
                 tokens = pre_tokenizer(captions, return_tensors="pt", padding=True, truncation=True).to(device)
                 output = pre_model(**tokens)
                 embeddings = output.last_hidden_state[:, 0]  # [CLS]-like 
-
-            txt_tok = model.module.text_to_latent(embeddings)
-            reg = txt_tok.norm(p=2, dim=(1, 2, 3)).mean() * args.txt_reg
+            if args.frozen_text_proj:
+                with torch.no_grad():
+                    txt_tok = model.module.text_to_latent(embeddings)
+                    reg = 0.0
+            else:
+                txt_tok = model.module.text_to_latent(embeddings)
+                reg = txt_tok.norm(p=2, dim=(1, 2, 3)).mean() * args.txt_reg
             txt_tok = txt_tok + noise_scale * torch.randn_like(txt_tok)
 
             # ---------------------------------------------------------
@@ -248,7 +270,7 @@ def train(args):
                 nonlocal v, d_v_d_txt
                 z_t, v, d_v_d_txt = make_targets(txt_tok, img_tok, t)
                 v_pred, dvdt = jvp_fn(u_fn, (z_t, r_, t), 
-                                      (v.detach(), torch.zeros_like(r_), torch.ones_like(t)))
+                                     (v.detach(), torch.zeros_like(r_), torch.ones_like(t)))
                 return v_pred, dvdt
 
             eps = torch.randn_like(txt_tok)
@@ -264,9 +286,14 @@ def train(args):
                                                 )
             v_pred, dvdt = primal_pair
             d_v_pred_d_txt, d_dvdt_d_txt = tangent_pair
+            dvdt_detach = dvdt.detach()
+            del dvdt
+            d_dvdt_d_txt_detach = d_dvdt_d_txt.detach()
+            del d_dvdt_d_txt
 
-            v_trgt = v - (t - r_)[:, None, None, None] * dvdt.detach()
-            d_v_d_txt_trgt = d_v_d_txt * eps - (t - r_)[:, None, None, None] * d_dvdt_d_txt.detach()
+
+            v_trgt = v - (t - r_)[:, None, None, None] * dvdt_detach
+            d_v_d_txt_trgt = d_v_d_txt * eps - (t - r_)[:, None, None, None] * d_dvdt_d_txt_detach
 
             error1 = v_pred - v_trgt
             error2 = d_v_pred_d_txt - d_v_d_txt_trgt
@@ -274,6 +301,8 @@ def train(args):
             loss1 = adaptive_l2_loss(error1, gamma=args.gamma, c=1e-3)
             loss2 = adaptive_l2_loss(error2, gamma=args.gamma, c=1e-3)
             loss = loss1 + args.sob_lambda * loss2 + reg
+
+            print(f"Loss1: {loss1.item():.4f}, Loss2: {loss2.item():.4f}, Reg: {reg:.4f}")
 
             optim.zero_grad(set_to_none=True)
             loss.backward()
@@ -287,7 +316,7 @@ def train(args):
             epoch_loss += loss.item()
             epoch_embeddings_std += embeddings.std().item()
             epoch_tix_tok_std += txt_tok.std().item()
-            epoch_derror += torch.mean(torch.square(dvdt.detach()))
+            epoch_derror += torch.mean(torch.square(dvdt_detach))
 
         # -----------------------------------------------------------------
         # Metrics aggregation (average across all GPUs)
@@ -316,7 +345,7 @@ def train(args):
         if rank == 0:
 
             ############################# sample start #############################
-            if epoch % 50 == 0:
+            if epoch % 50 == 0 and epoch <= args.sample_epoch:
                 dt = 0.2
                 ema.apply_shadow()
                 with torch.no_grad():
@@ -326,7 +355,7 @@ def train(args):
                     img_recon_gd = vae.decode(img_tok / scale_).sample
                 ema.restore()
 
-                dir_path = '/mntc/yuhaoh/programme/MeanFlow_Text2Image/' + 'meanflow_imgs_{}_{}'.format(int(1000*args.noise_scale), args.model)
+                dir_path = './MeanFlow_Text2Image/' + 'meanflow_imgs_{}_{}'.format(int(1000*args.noise_scale), args.model)
                 Path(dir_path).mkdir(parents=True, exist_ok=True)
 
                 try:
@@ -409,7 +438,7 @@ def build_parser():
     p_train.add_argument("--ckpt_out", type=str, default="flowtok_mean_flow_")
     p_train.add_argument("--run_name", type=str, default="FlowTokLite")
     p_train.add_argument("--wandb", type=str, default="disabled")
-    p_train.add_argument("--frozen_text_proj", action="store_true")
+    p_train.add_argument("--frozen_text_proj", type=bool, default=True)
     p_train.add_argument("--noise_scale", type=float, default=0.1)
     p_train.add_argument("--model", type=str, default="mfunet")
     p_train.add_argument("--alpha", type=float, default=0.0)
@@ -417,9 +446,11 @@ def build_parser():
     p_train.add_argument("--gamma", type=float, default=0.5)
     p_train.add_argument("--lr", type=float, default=1e-4)
     p_train.add_argument("--t_sample", type=str, default='uniform_1',)
-    p_train.add_argument("--sob_lambda", type=float, default=1e-2)
+    p_train.add_argument("--sob_lambda", type=float, default=0)
     p_train.add_argument("--txt_reg", type=float, default=1e-4)
     p_train.add_argument("--save_every", type=int, default=200)
+    p_train.add_argument("--rcvr_epochs", type=int, default=600)
+    p_train.add_argument("--sample_epoch", type=int, default=9999)
 
     # DDP‑specific
     p_train.add_argument("--local_rank", type=int, default=int(os.environ.get("LOCAL_RANK", 0)))

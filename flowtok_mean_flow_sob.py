@@ -377,7 +377,7 @@ if __name__ == "__main__":
     p_train.add_argument("--dataset", type=str, required=True,
                          help="HuggingFace dataset id with image & text fields 'image'/'text'.")
     p_train.add_argument("--img_size", type=int, default=256)
-    p_train.add_argument("--batch", type=int, default=32)
+    p_train.add_argument("--batch", type=int, default=16)
     p_train.add_argument("--epochs", type=int, default=2000)
     p_train.add_argument("--ckpt_out", type=str, default="flowtok_mean_flow_")
     p_train.add_argument("--hf_token", type=str, default=None,

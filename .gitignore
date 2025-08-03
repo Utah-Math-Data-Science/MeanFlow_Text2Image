@@ -2,3 +2,4 @@ __pycache__/
 flowers_blip_splits/
 meanflow_imgs_*/
 wandb/
+*.pt

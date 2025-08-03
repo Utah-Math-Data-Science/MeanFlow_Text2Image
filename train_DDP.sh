@@ -7,7 +7,7 @@
 
 
 # 1) Set the GPUs
-export CUDA_VISIBLE_DEVICES=1,2,3,4,5,6,7  # four GPUs
+export CUDA_VISIBLE_DEVICES=0  # four GPUs
 
 # 2) Figure out how many ranks to launch
 if [[ -n "${CUDA_VISIBLE_DEVICES}" ]]; then
@@ -38,7 +38,7 @@ torchrun \
   --dataset flowers_blip_splits \
   --batch 16 \
   --epochs 2000 \
-  --wandb online \
+  --wandb disabled \
   "$@"
 
 # Any extra CLI flags can be appended when you call this script, e.g.
