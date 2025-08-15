@@ -2,18 +2,8 @@
 
 This repository implements a one-step generative Flow Matching model based on [MeanFlow](https://arxiv.org/abs/2505.13447).
 ## Framework
-```bash
-[ Text Prompts ] → Token Embeddings → Latent Variable Z₀ 
-                                               │
-                                               ▼
-                                          [ MeanFlow ]
-                                               │
-                                               ▼
-                                       Latent Variable Z₁ → VAE.decode(Z₁)
-                                                                   │
-                                                                   ▼
-                                                               [ Images ]
-```
+
+![MeanTok](MeanTok.png)
 
 ## Prompts
     Flowers:
