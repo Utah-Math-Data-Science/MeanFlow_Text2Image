@@ -32,6 +32,8 @@ This repository implements a one-step generative Flow Matching model based on [M
 ## One-step Generated Samples:
 ![Samples](Samples.png)
 
+![Samples2](Samples2.png)
+
 ## Pretrained Models:
 ### Image to latent space:
 ```
