@@ -15,7 +15,8 @@ This repository implements a one-step generative Flow Matching model based on [M
                                                                [ Images ]
 ```
 
-## Prompts:
+## Prompts
+    Flowers:
     1) a close up of a sword lily with orange flowers
     2) a watercress in a flower pot
     3) a yellow bougainvillea in the middle of the plant
@@ -28,6 +29,22 @@ This repository implements a one-step generative Flow Matching model based on [M
     10) a pink siam tulip with white flowers on a green background
     11) a pink ruby-lipped cattleya with a white background
     12) a close up of a red bee balm
+
+    COCO Dataset:
+    1) A brown teddy bear standing next to a toothbrush.              |     1) A green umbrella sitting on top of a sandy beach.
+    2) Riding a motorcycle down a street that has no one ...          |     2) A country charm type of kitchen is equipped with ...
+    3) The toilet is in a room with exposed pipes.                    |     3) A man riding a snowboard down the side of a ski slope.
+    4) A couple of men sitting at a table having dinner ...           |     4) A man stands beside his black and red motorcycle...
+    5) A cat walking on the top of an open door.                      |     5) A calico cat standing on top of an upholstered chair.
+    6) The silhouette of people is seen against the inside of ...     |     6) Many kites can be seen in the air through umbrellas.
+    7) A donut on a plate with a fork and knife.                      |     7) A baseball player holding a wooden bat standing.
+    8) A black dog running in a pen with a horse.                     |     8) A small kitchen inside of a dark office.
+    9) A bathroom with a sink, paper roll, toilet, towel...           |     9) A herd of sheep standing in a snow-covered field.
+    10) A living room filled with furniture and a staircase.          |     10) A table topped with glasses and eating utensils.
+    11) A game of tennis on a blue court with an audience.            |     11) A little girl sitting at a table with lots of fruit ...
+    12) A person and a laptop in a room.                              |     12) There is a male skateboarder doing a trick.
+    
+
     
 ## One-step Generated Samples:
 ![Samples](Samples.png)
